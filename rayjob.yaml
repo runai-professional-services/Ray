@@ -1,0 +1,62 @@
+apiVersion: ray.io/v1alpha1
+kind: RayJob
+metadata:
+  name: sample-rayjob  
+  namespace: runai-test
+spec:
+  entrypoint: |
+    python -c "
+    import ray
+    ray.init()
+    @ray.remote
+    def f():
+        return 'hello world'
+    print(ray.get(f.remote()))"
+  rayClusterSpec:
+    rayVersion: '2.9.0'
+    headGroupSpec:
+      replicas: 1
+      rayStartParams:
+        dashboard-host: '0.0.0.0'
+        num-cpus: '1'   
+      template:
+        metadata:
+          annotations:
+            runai.io/project: "test"
+            runai.io/queue: "default"
+        spec:
+          schedulerName: runai-scheduler
+          containers:
+            - name: ray-head
+              image: rayproject/ray:2.9.0
+              resources:
+                limits:
+                  cpu: "1"
+                  memory: "2Gi"
+                requests:
+                  cpu: "1"  
+                  memory: "2Gi"
+    workerGroupSpecs:
+      - groupName: small-group
+        replicas: 2 
+        minReplicas: 1
+        maxReplicas: 3
+        rayStartParams:
+          num-cpus: '1'
+        template:  
+          metadata:
+            annotations:
+              runai.io/project: "test"
+              runai.io/queue: "default"
+          spec:
+            schedulerName: runai-scheduler
+            containers:
+              - name: ray-worker
+                image: rayproject/ray:2.9.0
+                resources:
+                  limits:
+                    cpu: "1"
+                    memory: "1Gi"
+                  requests: 
+                    cpu: "1"
+                    memory: "1Gi"
