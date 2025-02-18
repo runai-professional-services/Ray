@@ -1,6 +1,6 @@
 # Ray on Kubernetes with KubeRay
 
-This repository contains YAML configuration files for deploying Ray on a Kubernetes cluster using the KubeRay operator.
+This repository contains YAML configuration files for deploying Ray on a runai using the KubeRay operator.
 
 ## Prerequisites
 
