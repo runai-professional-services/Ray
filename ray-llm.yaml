@@ -1,0 +1,87 @@
+apiVersion: ray.io/v1
+kind: RayService
+metadata:
+  name: rayservice-sample
+  namespace: runai-test
+spec:
+  serveConfigV2: |
+    applications:
+      - name: text_ml_app
+        import_path: text_ml.app
+        route_prefix: /summarize_translate
+        runtime_env:
+          working_dir: "https://github.com/ray-project/serve_config_examples/archive/eb49e7cacd846ed12daf0d0f0cf496d3f30d8f0f.zip"
+          pip:
+            - torch
+            - transformers
+        deployments:
+          - name: Translator
+            num_replicas: 2           # Increase replicas to create load
+            ray_actor_options:
+              num_cpus: 0.5           # Increase CPU requirements
+            user_config:
+              language: french
+          - name: Summarizer
+            num_replicas: 2           # Increase replicas to create load
+            ray_actor_options:
+              num_cpus: 0.5           # Increase CPU requirements
+
+  rayClusterConfig:
+    rayVersion: "2.41.0"
+    # ENABLE AUTOSCALING
+    enableInTreeAutoscaling: true
+    
+    headGroupSpec:
+      rayStartParams:
+        dashboard-host: "0.0.0.0"
+        include-dashboard: "true"
+      template:
+        spec:
+          schedulerName: runai-scheduler
+          containers:
+            - name: ray-head
+              image: rayproject/ray:2.41.0
+              resources:
+                requests:
+                  cpu: "2"
+                  memory: "2Gi"
+                limits:
+                  cpu: "2"
+                  memory: "2Gi"
+              # Add environment variables for autoscaling
+              env:
+                - name: RAY_ENABLE_AUTOSCALING
+                  value: "1"
+
+    workerGroupSpecs:
+      - groupName: small-group
+        # REMOVE replicas field when using autoscaling
+        minReplicas: 2      # Minimum workers
+        maxReplicas: 5      # Maximum workers  
+        rayStartParams: {}
+        scaleStrategy:
+          workersToDelete: []
+        template:
+          metadata:
+            annotations:
+              runai.io/project: "test"
+              runai.io/queue: "high-priority"
+              gpu-fraction: "0.5"
+              gpu-fraction-num-devices: "1"
+            labels:
+              runai/queue: "high-priority"
+          spec:
+            schedulerName: runai-scheduler
+            containers:
+              - name: ray-worker
+                image: rayproject/ray:2.41.0
+                resources:
+                  requests:
+                    cpu: "500m"     # Each worker requests 0.5 CPU
+                    memory: "2Gi"
+                  limits:
+                    cpu: "1"        # Each worker can use up to 1 CPU
+                    memory: "2Gi"
+                env:
+                  - name: RAY_ENABLE_AUTOSCALING
+                    value: "1"
