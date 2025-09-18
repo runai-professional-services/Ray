@@ -16,7 +16,7 @@ Before you begin, ensure you have the following:
 
 helm repo add kuberay https://ray-project.github.io/kuberay-helm/
 helm repo update
-helm install kuberay-operator kuberay/kuberay-operator --version 0.5.0 --namespace ray-system --create-namespace
+helm install kuberay-operator kuberay/kuberay-operator --namespace ray-system --create-namespace
 
 
 2. Clone this repository:
